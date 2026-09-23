@@ -14,6 +14,7 @@ declare global {
   const SLASH_BASIC_FORMAT_IDS: typeof import('./src/composables/slashCommands').SLASH_BASIC_FORMAT_IDS
   const SLASH_EDIT_DOC_IDS: typeof import('./src/composables/slashCommands').SLASH_EDIT_DOC_IDS
   const SLASH_HEADING_IDS: typeof import('./src/composables/slashCommands').SLASH_HEADING_IDS
+  const UPLOADED_IMAGE_MAP_KEY: typeof import('./src/composables/useImageUploader').UPLOADED_IMAGE_MAP_KEY
   const UPLOAD_HOST_VALUES: typeof import('./src/composables/useLocalizedUploadHosts').UPLOAD_HOST_VALUES
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
   const aiConfig: typeof import('./src/stores/aiConfig').default

@@ -343,6 +343,21 @@ function recoverHistory() {
 }
 
 function confirmRestoreHistory() {
+  const post = postStore.getPostById(currentPostId.value!)
+  if (!post) {
+    isOpenHistoryDialog.value = false
+    return
+  }
+
+  // Restoring always replaces the live editor document, so confirm whenever
+  // the editor holds changes not yet flushed to the post store.
+  const openPost = postStore.currentPost
+  const hasUnsavedChanges = Boolean(openPost) && editorStore.getContent() !== openPost!.content
+  if (!hasUnsavedChanges) {
+    recoverHistory()
+    return
+  }
+
   confirmStore.confirm({
     title: t('confirm.tip'),
     description: t('post.restoreArticleDescription'),

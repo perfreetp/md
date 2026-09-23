@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useEditorRefresh } from '@/composables/useEditorRefresh'
 import { LOCALE_OPTIONS, SUPPORTED_LOCALES } from '@/i18n/constants'
 import { useLocaleStore } from '@/stores/locale'
+import { usePostStore } from '@/stores/post'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 
@@ -24,6 +25,7 @@ const { t } = useI18n()
 const localeStore = useLocaleStore()
 const uiStore = useUIStore()
 const themeStore = useThemeStore()
+const postStore = usePostStore()
 const { editorRefresh } = useEditorRefresh()
 
 const dialogOpen = computed({
@@ -41,6 +43,42 @@ const {
 } = storeToRefs(uiStore)
 
 const { isCountStatus } = storeToRefs(themeStore)
+
+const { historyIntervalSeconds, historyMaxCount } = storeToRefs(postStore)
+
+const historyIntervalModel = computed({
+  get: () => String(historyIntervalSeconds.value),
+  set: (value: string) => {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed) && parsed > 0)
+      historyIntervalSeconds.value = parsed
+  },
+})
+
+const historyMaxCountModel = computed({
+  get: () => String(historyMaxCount.value),
+  set: (value: string) => {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed) && parsed > 0)
+      historyMaxCount.value = parsed
+  },
+})
+
+const historyIntervalOptions = computed(() =>
+  [10, 30, 60, 120, 300].map(seconds => ({
+    value: String(seconds),
+    label: seconds < 60
+      ? t(`preferences.history.intervalSeconds`, { count: seconds })
+      : t(`preferences.history.intervalMinutes`, { count: seconds / 60 }),
+  })),
+)
+
+const historyMaxCountOptions = computed(() =>
+  [5, 10, 20, 50, 100].map(count => ({
+    value: String(count),
+    label: t(`preferences.history.maxCountOption`, { count }),
+  })),
+)
 
 const activeTab = ref(`general`)
 
@@ -181,6 +219,32 @@ function onLocaleChange(value: string) {
             class="shrink-0"
             :model-value="enableImageReupload"
             @update:model-value="enableImageReupload = $event"
+          />
+        </div>
+
+        <div class="flex items-center justify-between gap-4 border-t py-3">
+          <div class="min-w-0 space-y-0.5">
+            <Label>{{ t('preferences.history.intervalLabel') }}</Label>
+            <p class="text-xs text-muted-foreground">
+              {{ t('preferences.history.intervalHint') }}
+            </p>
+          </div>
+          <PanelSelect
+            v-model="historyIntervalModel"
+            :options="historyIntervalOptions"
+          />
+        </div>
+
+        <div class="flex items-center justify-between gap-4 py-3">
+          <div class="min-w-0 space-y-0.5">
+            <Label>{{ t('preferences.history.maxCountLabel') }}</Label>
+            <p class="text-xs text-muted-foreground">
+              {{ t('preferences.history.maxCountHint') }}
+            </p>
+          </div>
+          <PanelSelect
+            v-model="historyMaxCountModel"
+            :options="historyMaxCountOptions"
           />
         </div>
       </TabsContent>

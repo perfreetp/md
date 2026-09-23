@@ -255,6 +255,15 @@ export default {
       label: `Word count`,
       hint: `Show word count and reading time at the top of the preview`,
     },
+    history: {
+      intervalLabel: `Snapshot interval`,
+      intervalHint: `How often a history snapshot is saved for the post being edited`,
+      maxCountLabel: `Snapshots kept`,
+      maxCountHint: `Maximum number of history snapshots kept per post; the oldest are removed beyond this limit`,
+      intervalSeconds: `{count} sec`,
+      intervalMinutes: `{count} min`,
+      maxCountOption: `{count}`,
+    },
   },
   pdfExport: {
     title: `Export PDF`,

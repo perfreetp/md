@@ -255,6 +255,15 @@ export default {
       label: `字數統計`,
       hint: `在預覽文章頂部顯示字數與閱讀時間`,
     },
+    history: {
+      intervalLabel: `歷史快照間隔`,
+      intervalHint: `每隔多久為正在編輯的文章自動儲存一份歷史快照`,
+      maxCountLabel: `快照保留份數`,
+      maxCountHint: `每篇文章最多保留的歷史快照數量，超出後自動刪除最早的快照`,
+      intervalSeconds: `{count} 秒`,
+      intervalMinutes: `{count} 分鐘`,
+      maxCountOption: `{count} 份`,
+    },
   },
   pdfExport: {
     title: `匯出 PDF`,

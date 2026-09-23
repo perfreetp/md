@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { ThemeName } from '@md/shared/configs'
-import { Check, CheckSquare, CircleHelp, Download, Edit3, Ellipsis, Eye, Plus, X } from '@lucide/vue'
+import { Check, CheckSquare, CircleHelp, Download, Edit3, Ellipsis, Eye, Plus, Share2, Upload, X } from '@lucide/vue'
 import { hljs } from '@md/core/renderer'
 import { exportMergedTheme } from '@md/core/theme'
 import { getDefaultCustomTheme, isBuiltinThemeName, isMarketplaceThemeKey, themeMap } from '@md/shared'
+import ThemeShareDialog from '@/components/editor/dialogs/ThemeShareDialog.vue'
 import { getThemeLabel } from '@/composables/useLocalizedStyleOptions'
 import { CONTENT_FONT_LANG } from '@/i18n/constants'
 import { getLocale } from '@/i18n/translate'
@@ -177,6 +178,14 @@ function addHandler() {
 const isOpenViewThemeDialog = ref(false)
 const selectedViewTheme = ref<'default' | 'grace' | 'simple'>('default')
 const highlightedCSS = computed(() => hljs.highlight(themeMap[selectedViewTheme.value], { language: `css` }).value)
+
+const isOpenShareDialog = ref(false)
+const shareDialogTab = ref<'share' | 'import'>(`share`)
+
+function openShareDialog(tab: 'share' | 'import') {
+  shareDialogTab.value = tab
+  isOpenShareDialog.value = true
+}
 
 const contextMenuTargetId = ref<string | null>(null)
 const showContextMenu = ref(false)
@@ -473,6 +482,12 @@ function exportCurrentTheme() {
             <DropdownMenuItem @click="exportCurrentTheme">
               <Download class="mr-2 size-4" /> {{ t('common.export') }}
             </DropdownMenuItem>
+            <DropdownMenuItem @click="openShareDialog('share')">
+              <Share2 class="mr-2 size-4" /> {{ t('cssEditor.share.shareTheme') }}
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="openShareDialog('import')">
+              <Upload class="mr-2 size-4" /> {{ t('cssEditor.share.importTheme') }}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="isOpenTipsDialog = true">
               <CircleHelp class="mr-2 size-4" /> {{ t('cssEditor.tipsTitle') }}
@@ -672,6 +687,8 @@ function exportCurrentTheme() {
       </DialogContent>
     </Dialog>
   </div>
+
+  <ThemeShareDialog v-model:open="isOpenShareDialog" :initial-tab="shareDialogTab" />
 
   <Dialog v-model:open="isOpenViewThemeDialog">
     <DialogContent class="sm:max-w-4xl max-h-[90vh] flex flex-col">

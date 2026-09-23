@@ -630,30 +630,36 @@ watch(
   },
 )
 
-const historyTimer = ref<ReturnType<typeof setTimeout>>()
-onMounted(() => {
-  historyTimer.value = setInterval(() => {
-    const currentPost = posts.value[currentPostIndex.value]
+function snapshotCurrentPostHistory() {
+  const currentPost = posts.value[currentPostIndex.value]
+  if (!currentPost)
+    return
 
-    const pre = (currentPost.history || [])[0]?.content
-    if (pre === currentPost.content) {
-      return
-    }
+  const pre = (currentPost.history || [])[0]?.content
+  if (pre === currentPost.content) {
+    return
+  }
 
-    currentPost.history ??= []
-    currentPost.history.unshift({
-      content: currentPost.content,
-      datetime: toStoredDateTime(),
-    })
+  currentPost.history ??= []
+  currentPost.history.unshift({
+    content: currentPost.content,
+    datetime: toStoredDateTime(),
+  })
 
-    currentPost.history.length = Math.min(currentPost.history.length, 10)
-  }, 30 * 1000)
+  const maxCount = Math.max(1, Number(postStore.historyMaxCount) || 10)
+  currentPost.history.length = Math.min(currentPost.history.length, maxCount)
+}
+
+// Recreate the snapshot timer when the configured interval changes.
+watchEffect((onCleanup) => {
+  const intervalSeconds = Math.max(5, Number(postStore.historyIntervalSeconds) || 30)
+  const timer = setInterval(snapshotCurrentPostHistory, intervalSeconds * 1000)
+  onCleanup(() => clearInterval(timer))
 })
 
 onUnmounted(() => {
   editorStore.unregisterContentFlush()
   window.removeEventListener(MATHJAX_READY_EVENT, handleMathJaxReady)
-  clearTimeout(historyTimer.value)
   clearTimeout(persistTimer.value)
   document.removeEventListener(`keydown`, handleGlobalKeydown, { capture: false })
 })

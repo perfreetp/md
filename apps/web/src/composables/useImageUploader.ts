@@ -4,7 +4,7 @@ import { t } from '@/i18n/translate'
 import { fileUpload } from '@/services/upload'
 import { store } from '@/storage'
 
-const STORAGE_KEY = `uploaded_image_map`
+export const UPLOADED_IMAGE_MAP_KEY = `uploaded_image_map`
 
 export function imageUploadCacheKey(host: string, hash: string): string {
   return `${host}:${hash}`
@@ -15,13 +15,13 @@ export function useImageUploader() {
   const error = ref<string | null>(null)
 
   const getStorageMap = async (): Promise<Record<string, string>> => {
-    return (await store.getJSON<Record<string, string>>(STORAGE_KEY, {})) ?? {}
+    return (await store.getJSON<Record<string, string>>(UPLOADED_IMAGE_MAP_KEY, {})) ?? {}
   }
 
   const updateStorageMap = async (hash: string, url: string) => {
     const map = await getStorageMap()
     map[hash] = url
-    await store.setJSON(STORAGE_KEY, map)
+    await store.setJSON(UPLOADED_IMAGE_MAP_KEY, map)
   }
 
   // SHA-256 for Blob/File via Web Crypto (replaces spark-md5)

@@ -82,10 +82,6 @@ onUnmounted(() => {
   }
 })
 
-function handleUploadImage(file: File, cb?: any, applyUrl?: boolean) {
-  editorPanelCompRef.value?.uploadImage(file, cb, applyUrl)
-}
-
 const CSS_PANEL_TARGET_SIZE = 25
 const RIGHT_PANEL_TARGET_SIZE = 30
 const EMOJI_PANEL_TARGET_SIZE = 30
@@ -356,7 +352,7 @@ const isImgLoading = computed(() => unref(editorPanelCompRef.value?.isImgLoading
         </ResizablePanelGroup>
       </div>
 
-      <UploadImgDialog v-if="isShowUploadImgDialog" @upload-image="handleUploadImage" />
+      <UploadImgDialog v-if="isShowUploadImgDialog" />
 
       <TableEditDialog v-if="isShowTableEditDialog" />
 

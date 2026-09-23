@@ -255,6 +255,15 @@ export default {
       label: `文字数カウント`,
       hint: `プレビュー上部に文字数と読了時間を表示`,
     },
+    history: {
+      intervalLabel: `スナップショット間隔`,
+      intervalHint: `編集中の記事の履歴スナップショットを自動保存する間隔`,
+      maxCountLabel: `スナップショット保持数`,
+      maxCountHint: `記事ごとに保持する履歴スナップショットの最大数。超過分は古いものから削除されます`,
+      intervalSeconds: `{count} 秒`,
+      intervalMinutes: `{count} 分`,
+      maxCountOption: `{count} 件`,
+    },
   },
   pdfExport: {
     title: `PDF をエクスポート`,

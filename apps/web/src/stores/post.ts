@@ -49,6 +49,10 @@ export const usePostStore = defineStore(`post`, () => {
   const currentPostId = store.reactive(addPrefix(`current_post_id`), ``)
   const sortMode = store.reactive(addPrefix(`sort_mode`), `create-old-new`)
 
+  /** Auto-snapshot cadence (seconds) and retention limit for post history. */
+  const historyIntervalSeconds = store.reactive(addPrefix(`history_interval_seconds`), 30)
+  const historyMaxCount = store.reactive(addPrefix(`history_max_count`), 10)
+
   let persistReady = false
 
   const persistAll = debounce(async (snapshot: Post[]) => {
@@ -283,6 +287,8 @@ export const usePostStore = defineStore(`post`, () => {
     posts,
     currentPostId,
     sortMode,
+    historyIntervalSeconds,
+    historyMaxCount,
     currentPostIndex,
     currentPost,
     getPostById,
