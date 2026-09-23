@@ -1,12 +1,15 @@
 import type { EditorView } from '@codemirror/view'
-import { ctrlSign, shiftSign } from '@md/shared/configs'
+import { ctrlSign, shiftSign, themeOptions } from '@md/shared/configs'
 import { useEditorDocumentActions } from '@/composables/useEditorDocumentActions'
+import { useEditorRefresh } from '@/composables/useEditorRefresh'
 import { t } from '@/i18n/translate'
 import { isAccountUiEnabled } from '@/services/account/config'
 import { isShareUiEnabled } from '@/services/share/client'
 import { isSyncUiEnabled } from '@/services/sync/client'
 import { useEditorStore } from '@/stores/editor'
+import { useExportStore } from '@/stores/export'
 import { useLocaleStore } from '@/stores/locale'
+import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 
 export interface PaletteCommand {
@@ -22,7 +25,10 @@ export function useCommandPalette() {
   const uiStore = useUIStore()
   const editorStore = useEditorStore()
   const localeStore = useLocaleStore()
+  const themeStore = useThemeStore()
+  const exportStore = useExportStore()
   const { formatContent } = useEditorDocumentActions()
+  const { scheduleEditorRefresh } = useEditorRefresh()
 
   function withEditor(run: (view: EditorView) => void | Promise<void>) {
     const view = editorStore.editor ? toRaw(editorStore.editor) as EditorView : null
@@ -209,7 +215,63 @@ export function useCommandPalette() {
         keywords: [`组件`, `component`, `块`],
         action: () => { uiStore.toggleShowComponentDialog(true) },
       },
+      {
+        id: `export-markdown`,
+        label: t(`menu.exportMarkdown`),
+        group: t(`commandPalette.group.export`),
+        keywords: [`导出`, `markdown`, `md`, `export`],
+        action: () => { exportStore.exportEditorContent2MD(editorStore.getContent()) },
+      },
+      {
+        id: `export-html`,
+        label: t(`menu.exportHtml`),
+        group: t(`commandPalette.group.export`),
+        keywords: [`导出`, `html`, `export`],
+        action: () => { void exportStore.exportEditorContent2HTML() },
+      },
+      {
+        id: `export-pdf`,
+        label: t(`menu.exportPdf`),
+        group: t(`commandPalette.group.export`),
+        keywords: [`导出`, `pdf`, `export`],
+        action: () => { uiStore.openPdfExportDialog() },
+      },
+      {
+        id: `export-png`,
+        label: t(`menu.exportPng`),
+        group: t(`commandPalette.group.export`),
+        keywords: [`导出`, `图片`, `png`, `image`, `export`],
+        action: () => { void exportStore.downloadAsCardImage() },
+      },
+      {
+        id: `export-long-image`,
+        label: t(`menu.exportLongImage`),
+        group: t(`commandPalette.group.export`),
+        keywords: [`导出`, `长图`, `水印`, `long`, `image`, `watermark`, `export`],
+        action: () => { uiStore.openLongImageExportDialog() },
+      },
+      {
+        id: `export-history`,
+        label: t(`exportHistory.title`),
+        group: t(`commandPalette.group.export`),
+        keywords: [`导出`, `记录`, `历史`, `history`, `export`],
+        action: () => { uiStore.toggleShowExportHistoryDialog(true) },
+      },
     ]
+
+    for (const option of themeOptions) {
+      commands.push({
+        id: `theme-${option.value}`,
+        label: t(`commandPalette.themeLabel`, { name: t(`styleOptions.theme.${option.value}.label`) }),
+        group: t(`commandPalette.group.theme`),
+        keywords: [`主题`, `皮肤`, `theme`, `style`, String(option.value)],
+        action: () => {
+          themeStore.theme = option.value
+          themeStore.applyCurrentTheme()
+          scheduleEditorRefresh()
+        },
+      })
+    }
 
     if (isAccountUiEnabled()) {
       commands.push({

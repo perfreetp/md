@@ -105,6 +105,7 @@ export default {
     exportHtmlNoStyle: `HTML（プレーン）`,
     exportPdf: `PDF`,
     exportPng: `PNG`,
+    exportLongImage: `長画像…`,
     exportPngSegments: `PNG（分割）`,
     exportPngSegmentHeight: `1 枚あたり約 {height}px`,
     templateManage: `テンプレート`,

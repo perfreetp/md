@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Download, Ellipsis, FileText, Plus, Regex, Replace, ReplaceAll, Search, Upload, X } from '@lucide/vue'
+import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Download, Ellipsis, FileText, History, Plus, Regex, Replace, ReplaceAll, Search, Upload, X } from '@lucide/vue'
 import { CONTENT_FONT_LANG } from '@/i18n/constants'
 import { formatLocalDateTime } from '@/i18n/translate'
 import { copyPlain } from '@/lib/browser/clipboard'
@@ -24,14 +24,15 @@ const confirmStore = useConfirmStore()
 // Overrides the auto-imported component so diff-match-patch stays out of this
 // chunk and only loads when the diff tab is first shown.
 const VersionDiffViewer = defineAsyncComponent(() => import('./VersionDiffViewer.vue'))
+const ExportHistoryDialog = defineAsyncComponent(() => import('@/components/editor/dialogs/ExportHistoryDialog.vue'))
 
 function formatHistoryDatetime(datetime: number | string) {
   void locale.value
   return formatLocalDateTime(datetime)
 }
 const uiStore = useUIStore()
-const { isDark, isMobile, isOpenPostSlider } = storeToRefs(uiStore)
-const { toggleShowImportMdDialog } = uiStore
+const { isDark, isMobile, isOpenPostSlider, isShowExportHistoryDialog } = storeToRefs(uiStore)
+const { toggleShowImportMdDialog, toggleShowExportHistoryDialog } = uiStore
 
 const postSliderMenu = providePostSliderMenu()
 const { openMenuKey } = postSliderMenu
@@ -377,6 +378,18 @@ function closeSearch() {
   searchQuery.value = ``
   replaceQuery.value = ``
   showReplace.value = false
+}
+
+/** Open the post and locate the first hit in the editor so replacing can continue there. */
+function openSearchResult(postId: string) {
+  const q = searchQuery.value.trim()
+  postStore.currentPostId = postId
+  closeSearch()
+  if (!q)
+    return
+  if (uiStore.viewMode === `preview`)
+    uiStore.setViewMode(`split`)
+  uiStore.openSearchTab(q, true)
 }
 
 // Debounced so each keystroke does not synchronously scan every post body.
@@ -770,6 +783,17 @@ function handleDragEnd() {
           </button>
 
           <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+            :class="isMobile ? 'size-8' : 'size-7'"
+            :title="t('exportHistory.title')"
+            :aria-label="t('exportHistory.title')"
+            @click="toggleShowExportHistoryDialog()"
+          >
+            <History class="size-4" />
+          </button>
+
+          <button
             v-if="isMobile"
             type="button"
             class="inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 size-8"
@@ -951,7 +975,7 @@ function handleDragEnd() {
               'bg-accent text-accent-foreground font-medium': postStore.currentPostId === result.id,
               'text-foreground/70 hover:text-foreground hover:bg-accent/50': postStore.currentPostId !== result.id,
             }"
-            @click="postStore.currentPostId = result.id; closeSearch()"
+            @click="openSearchResult(result.id)"
           >
             <span
               v-if="postStore.currentPostId === result.id"
@@ -1101,6 +1125,8 @@ function handleDragEnd() {
       </Transition>
     </nav>
   </div>
+
+  <ExportHistoryDialog v-if="isShowExportHistoryDialog" v-model:open="isShowExportHistoryDialog" />
 
   <Dialog v-model:open="isOpenAddDialog">
     <DialogContent>

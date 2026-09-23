@@ -1,5 +1,10 @@
-import type { PdfExportOptions } from '@/services/export'
-import { DEFAULT_PDF_EXPORT_OPTIONS, normalizePdfExportOptions } from '@/services/export'
+import type { LongImageExportOptions, PdfExportOptions } from '@/services/export'
+import {
+  DEFAULT_LONG_IMAGE_EXPORT_OPTIONS,
+  DEFAULT_PDF_EXPORT_OPTIONS,
+  normalizeLongImageExportOptions,
+  normalizePdfExportOptions,
+} from '@/services/export'
 import { store } from '@/storage'
 import { addPrefix } from '@/storage/prefix'
 
@@ -175,6 +180,29 @@ export const useUIStore = defineStore(`ui`, () => {
   const isShowCommandPalette = ref(false)
   const toggleShowCommandPalette = useToggle(isShowCommandPalette)
 
+  /** Recently used command palette command ids, most recent first. */
+  const recentCommandIds = store.reactive<string[]>(addPrefix(`command_palette_recent`), [])
+
+  function recordCommandUsage(id: string) {
+    recentCommandIds.value = [id, ...recentCommandIds.value.filter(existing => existing !== id)].slice(0, 8)
+  }
+
+  const isShowLongImageExportDialog = ref(false)
+
+  const longImageExportOptions = store.reactive<LongImageExportOptions>(
+    addPrefix(`longImageExportOptions`),
+    { ...DEFAULT_LONG_IMAGE_EXPORT_OPTIONS, watermark: { ...DEFAULT_LONG_IMAGE_EXPORT_OPTIONS.watermark } },
+  )
+
+  function openLongImageExportDialog() {
+    // Backfill newly added keys and drop invalid values from older versions.
+    longImageExportOptions.value = normalizeLongImageExportOptions(longImageExportOptions.value)
+    isShowLongImageExportDialog.value = true
+  }
+
+  const isShowExportHistoryDialog = ref(false)
+  const toggleShowExportHistoryDialog = useToggle(isShowExportHistoryDialog)
+
   /** Component name to expand when opening the component dialog (e.g. 'MpProfile'). */
   const componentDialogTarget = ref<string | null>(null)
 
@@ -304,6 +332,13 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleShowKeyboardShortcutsDialog,
     isShowCommandPalette,
     toggleShowCommandPalette,
+    recentCommandIds,
+    recordCommandUsage,
+    isShowLongImageExportDialog,
+    longImageExportOptions,
+    openLongImageExportDialog,
+    isShowExportHistoryDialog,
+    toggleShowExportHistoryDialog,
     componentDialogTarget,
     openComponentDialogWithTarget,
     aiDialogVisible,

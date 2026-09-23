@@ -233,6 +233,7 @@ declare global {
   const useEventBus: typeof import('@vueuse/core').useEventBus
   const useEventListener: typeof import('@vueuse/core').useEventListener
   const useEventSource: typeof import('@vueuse/core').useEventSource
+  const useExportHistoryStore: typeof import('./src/stores/exportHistory').useExportHistoryStore
   const useExportStore: typeof import('./src/stores/export').useExportStore
   const useEyeDropper: typeof import('@vueuse/core').useEyeDropper
   const useFavicon: typeof import('@vueuse/core').useFavicon

@@ -105,6 +105,7 @@ export default {
     exportHtmlNoStyle: `HTML (plain)`,
     exportPdf: `PDF`,
     exportPng: `PNG`,
+    exportLongImage: `Long image…`,
     exportPngSegments: `PNG (split)`,
     exportPngSegmentHeight: `~{height}px per image`,
     templateManage: `Templates`,

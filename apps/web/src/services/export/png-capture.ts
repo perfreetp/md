@@ -16,16 +16,20 @@ export interface OffScreenPreview {
   cleanup: () => void
 }
 
+export interface PreviewShell {
+  /** Host element carrying the scoped export styles; attach it anywhere. */
+  host: HTMLElement
+  /** The `.preview` shell handed to html-to-image; includes the export padding. */
+  preview: HTMLElement
+  /** The cloned `#output` root. Its direct children are the atomic content blocks. */
+  content: HTMLElement
+}
+
 /**
- * Clone the live preview into a fixed-width off-screen host.
- *
- * Capturing a clone rather than the live preview keeps the on-screen editor
- * untouched while the export rewrites scroll containers and drops unresolved
- * async placeholders.
+ * Clone the live preview into a fixed-width shell with scoped export styles.
+ * The shell is detached; callers decide where to mount it.
  */
-export async function createOffScreenPreview(
-  previewDevice: PreviewDevice,
-): Promise<OffScreenPreview | null> {
+export async function buildPreviewShell(widthPx: number): Promise<PreviewShell | null> {
   const output = document.getElementById(`output`)
   if (!output)
     return null
@@ -33,11 +37,10 @@ export async function createOffScreenPreview(
   const isDarkApp = document.documentElement.classList.contains(`dark`)
   const useNightPreview = isDarkApp
     && document.getElementById(`output-wrapper`)?.classList.contains(`output_night`)
-  const width = previewDevice === `mobile` ? `375px` : `750px`
+  const width = `${widthPx}px`
 
   const host = document.createElement(`div`)
   host.setAttribute(`data-png-export-host`, ``)
-  host.style.cssText = `position:fixed;left:-99999px;top:0;z-index:-1;visibility:visible;pointer-events:none;`
   host.innerHTML = await getPngCaptureStyles()
 
   const wrapper = document.createElement(`div`)
@@ -60,6 +63,28 @@ export async function createOffScreenPreview(
   preview.appendChild(content)
   wrapper.appendChild(preview)
   host.appendChild(wrapper)
+
+  return { host, preview, content }
+}
+
+/**
+ * Clone the live preview into a fixed-width off-screen host.
+ *
+ * Capturing a clone rather than the live preview keeps the on-screen editor
+ * untouched while the export rewrites scroll containers and drops unresolved
+ * async placeholders.
+ */
+export async function createOffScreenPreview(
+  previewDevice: PreviewDevice,
+  widthOverride?: number,
+): Promise<OffScreenPreview | null> {
+  const widthPx = widthOverride ?? (previewDevice === `mobile` ? 375 : 750)
+  const shell = await buildPreviewShell(widthPx)
+  if (!shell)
+    return null
+
+  const { host, preview, content } = shell
+  host.style.cssText = `position:fixed;left:-99999px;top:0;z-index:-1;visibility:visible;pointer-events:none;`
   document.body.appendChild(host)
 
   return {

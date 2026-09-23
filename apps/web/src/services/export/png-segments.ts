@@ -1,4 +1,4 @@
-import type { PreviewDevice } from './png-capture'
+import type { OffScreenPreview, PreviewDevice } from './png-capture'
 import { sanitizeTitle } from '@md/shared/utils/basicHelpers'
 import { downloadFile } from '@md/shared/utils/fileHelpers'
 import { delay } from '@/lib/delay'
@@ -98,7 +98,19 @@ function collectBlocks(container: HTMLElement): HTMLElement[] {
   })
 }
 
-async function downloadSegmentsAsZip(segments: Blob[], baseName: string) {
+export async function downloadSegmentsAsZip(segments: Blob[], baseName: string) {
+  const archive = await createSegmentsZip(segments, baseName)
+  const url = URL.createObjectURL(archive)
+  try {
+    downloadFile(url, `${baseName}.zip`, `application/zip`)
+  }
+  finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+/** Bundle segment PNGs into a single zip archive. */
+export async function createSegmentsZip(segments: Blob[], baseName: string): Promise<Blob> {
   const { zip } = await import(`fflate`)
 
   const files: Record<string, Uint8Array> = {}
@@ -111,16 +123,10 @@ async function downloadSegmentsAsZip(segments: Blob[], baseName: string) {
   const archive = await new Promise<Uint8Array<ArrayBuffer>>((resolve, reject) =>
     zip(files, (err, out) => (err ? reject(err) : resolve(out as Uint8Array<ArrayBuffer>))))
 
-  const url = URL.createObjectURL(new Blob([archive], { type: `application/zip` }))
-  try {
-    downloadFile(url, `${baseName}.zip`, `application/zip`)
-  }
-  finally {
-    URL.revokeObjectURL(url)
-  }
+  return new Blob([archive], { type: `application/zip` })
 }
 
-function downloadSingleSegment(segment: Blob, baseName: string) {
+export function downloadSingleSegment(segment: Blob, baseName: string) {
   const url = URL.createObjectURL(segment)
   try {
     downloadFile(url, `${baseName}.png`, `image/png`)
@@ -131,12 +137,55 @@ function downloadSingleSegment(segment: Blob, baseName: string) {
 }
 
 /**
- * Export the preview as several PNGs split on block boundaries.
+ * Capture each segment of an off-screen preview as a PNG blob.
  *
  * Each segment is captured separately rather than slicing one tall canvas,
  * because a full-length capture is what hits the browser's canvas size limit on
  * long articles — the very case this export is for.
- *
+ */
+export async function captureSegmentBlobs(
+  offScreen: OffScreenPreview,
+  maxSegmentHeight: number,
+  onProgress?: (done: number, total: number) => void,
+): Promise<Blob[]> {
+  const blocks = collectBlocks(resolveBlockContainer(offScreen.content))
+  if (blocks.length === 0)
+    return []
+
+  const segments = planSegments(measureBlocks(blocks), maxSegmentHeight)
+  const captureOptions = getPngCaptureOptions()
+  const { toBlob } = await import(`html-to-image`)
+
+  // Inline display values come from the renderer (code blocks use flex), so
+  // the originals are restored rather than cleared.
+  const originalDisplay = blocks.map(block => block.style.display)
+  const images: Blob[] = []
+
+  try {
+    for (let i = 0; i < segments.length; i++) {
+      const visible = new Set(segments[i])
+      blocks.forEach((block, index) => {
+        block.style.display = visible.has(index) ? originalDisplay[index] : `none`
+      })
+
+      const blob = await toBlob(offScreen.el, captureOptions)
+      if (blob)
+        images.push(blob)
+
+      onProgress?.(i + 1, segments.length)
+    }
+  }
+  finally {
+    blocks.forEach((block, index) => {
+      block.style.display = originalDisplay[index]
+    })
+  }
+
+  return images
+}
+
+/**
+ * Export the preview as several PNGs split on block boundaries.
  * @returns the number of images produced, or 0 if there was nothing to export.
  */
 export async function exportPNGSegments(
@@ -152,39 +201,7 @@ export async function exportPNGSegments(
   try {
     await delay(100)
 
-    const blocks = collectBlocks(resolveBlockContainer(offScreen.content))
-    if (blocks.length === 0)
-      return 0
-
-    const segments = planSegments(measureBlocks(blocks), options.maxSegmentHeight)
-    const captureOptions = getPngCaptureOptions()
-    const { toBlob } = await import(`html-to-image`)
-
-    // Inline display values come from the renderer (code blocks use flex), so
-    // the originals are restored rather than cleared.
-    const originalDisplay = blocks.map(block => block.style.display)
-    const images: Blob[] = []
-
-    try {
-      for (let i = 0; i < segments.length; i++) {
-        const visible = new Set(segments[i])
-        blocks.forEach((block, index) => {
-          block.style.display = visible.has(index) ? originalDisplay[index] : `none`
-        })
-
-        const blob = await toBlob(offScreen.el, captureOptions)
-        if (blob)
-          images.push(blob)
-
-        options.onProgress?.(i + 1, segments.length)
-      }
-    }
-    finally {
-      blocks.forEach((block, index) => {
-        block.style.display = originalDisplay[index]
-      })
-    }
-
+    const images = await captureSegmentBlobs(offScreen, options.maxSegmentHeight, options.onProgress)
     if (images.length === 0)
       return 0
 
