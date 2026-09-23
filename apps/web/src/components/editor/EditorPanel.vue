@@ -4,6 +4,7 @@ import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, placeholder } from '@codemirror/view'
 import { history, markdownSetup, replaceDocumentWithoutHistory, resetEditorHistory, theme } from '@md/shared/editor'
 import { toBase64 } from '@md/shared/utils/fileHelpers'
+import UploadQueuePanel from '@/components/editor/UploadQueuePanel.vue'
 import { createComponentCompletionExtension } from '@/composables/useComponentCompletion'
 import { useEditorRefresh } from '@/composables/useEditorRefresh'
 import { useImageUploader } from '@/composables/useImageUploader'
@@ -24,6 +25,7 @@ import { usePostStore } from '@/stores/post'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
+import { useUploadQueueStore } from '@/stores/uploadQueue'
 
 const SidebarAIToolbar = defineAsyncComponent(() => import('@/components/ai/SidebarAIToolbar.vue'))
 const SlashCommandMenu = defineAsyncComponent(() => import('@/components/editor/SlashCommandMenu.vue'))
@@ -36,6 +38,7 @@ const postStore = usePostStore()
 const renderStore = useRenderStore()
 const themeStore = useThemeStore()
 const uiStore = useUIStore()
+const uploadQueueStore = useUploadQueueStore()
 const localizedAllComponents = useLocalizedAllComponents()
 const { upload } = useImageUploader()
 const { editorRefresh, scheduleEditorRefresh } = useEditorRefresh()
@@ -326,6 +329,16 @@ async function uploadMdImg({
   }
 }
 
+/** Batch-insert uploaded image links at the cursor, preserving enqueue order. */
+function insertUploadedUrls(urls: string[]) {
+  const view = codeMirrorView.value
+  if (!view || !urls.length)
+    return
+  const markdown = urls.map(url => `![](${url})`).join(`\n`)
+  view.dispatch(view.state.replaceSelection(`\n${markdown}\n`))
+  toast.success(t('editorPanel.uploadSuccess'))
+}
+
 function mdLocalToRemote() {
   // The async onMounted callback can resolve after an HMR remount, where the
   // template ref of the stale instance is already null.
@@ -355,7 +368,7 @@ function mdLocalToRemote() {
           else {
             const file = await handle.getFile()
             if (await beforeImageUpload(file)) {
-              uploadImage(file)
+              void uploadQueueStore.enqueue([file])
             }
           }
         })
@@ -368,17 +381,14 @@ function createPasteHandler() {
   return (event: ClipboardEvent, view: EditorView) => {
     const imageFiles = collectClipboardImages(event.clipboardData)
     if (imageFiles.length > 0) {
-      if (isImgLoading.value)
-        return true
-
       void (async () => {
         const validItems: File[] = []
         for (const item of imageFiles) {
           if (await beforeImageUpload(item))
             validItems.push(item)
         }
-        for (const item of validItems)
-          await uploadImage(item)
+        if (validItems.length)
+          await uploadQueueStore.enqueue(validItems)
       })()
       return true
     }
@@ -557,6 +567,7 @@ onMounted(() => {
       const editorView = createFormTextArea(editorDom)
       editor.value = editorView
       editorStore.registerContentFlush(commitEditorContentToPost)
+      uploadQueueStore.registerInsertHandler(insertUploadedUrls)
 
       const content = posts.value[currentPostIndex.value]?.content ?? ``
       await preloadMathJaxIfNeeded(content)
@@ -630,30 +641,52 @@ watch(
   },
 )
 
-const historyTimer = ref<ReturnType<typeof setTimeout>>()
-onMounted(() => {
-  historyTimer.value = setInterval(() => {
-    const currentPost = posts.value[currentPostIndex.value]
+const { historySnapshotInterval, historyMaxCount } = storeToRefs(uiStore)
 
-    const pre = (currentPost.history || [])[0]?.content
-    if (pre === currentPost.content) {
-      return
-    }
+const historyTimer = ref<ReturnType<typeof setInterval>>()
 
-    currentPost.history ??= []
-    currentPost.history.unshift({
-      content: currentPost.content,
-      datetime: toStoredDateTime(),
-    })
+function snapshotCurrentPostHistory() {
+  const currentPost = posts.value[currentPostIndex.value]
+  if (!currentPost)
+    return
 
-    currentPost.history.length = Math.min(currentPost.history.length, 10)
-  }, 30 * 1000)
+  const pre = (currentPost.history || [])[0]?.content
+  if (pre === currentPost.content) {
+    return
+  }
+
+  currentPost.history ??= []
+  currentPost.history.unshift({
+    content: currentPost.content,
+    datetime: toStoredDateTime(),
+  })
+
+  currentPost.history.length = Math.min(currentPost.history.length, historyMaxCount.value)
+}
+
+function restartHistoryTimer() {
+  clearInterval(historyTimer.value)
+  const intervalSeconds = Math.min(Math.max(Number(historySnapshotInterval.value) || 30, 5), 3600)
+  historyTimer.value = setInterval(snapshotCurrentPostHistory, intervalSeconds * 1000)
+}
+
+onMounted(restartHistoryTimer)
+watch(historySnapshotInterval, restartHistoryTimer)
+
+// Trim retained snapshots of every post when the configured cap shrinks.
+watch(historyMaxCount, (max) => {
+  const cap = Math.min(Math.max(Number(max) || 10, 1), 100)
+  for (const post of posts.value) {
+    if (post.history && post.history.length > cap)
+      post.history.length = cap
+  }
 })
 
 onUnmounted(() => {
   editorStore.unregisterContentFlush()
+  uploadQueueStore.unregisterInsertHandler()
   window.removeEventListener(MATHJAX_READY_EVENT, handleMathJaxReady)
-  clearTimeout(historyTimer.value)
+  clearInterval(historyTimer.value)
   clearTimeout(persistTimer.value)
   document.removeEventListener(`keydown`, handleGlobalKeydown, { capture: false })
 })
@@ -698,6 +731,8 @@ defineExpose({
       :is-mobile="isMobile"
       :show-editor="showEditor"
     />
+
+    <UploadQueuePanel />
 
     <EditorContextMenu>
       <div

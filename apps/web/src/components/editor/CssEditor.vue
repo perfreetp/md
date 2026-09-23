@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { ThemeName } from '@md/shared/configs'
-import { Check, CheckSquare, CircleHelp, Download, Edit3, Ellipsis, Eye, Plus, X } from '@lucide/vue'
+import { Check, CheckSquare, CircleHelp, Download, Edit3, Ellipsis, Eye, Plus, Share2, Upload, X } from '@lucide/vue'
 import { hljs } from '@md/core/renderer'
 import { exportMergedTheme } from '@md/core/theme'
 import { getDefaultCustomTheme, isBuiltinThemeName, isMarketplaceThemeKey, themeMap } from '@md/shared'
+import ThemeShareDialog from '@/components/editor/dialogs/ThemeShareDialog.vue'
 import { getThemeLabel } from '@/composables/useLocalizedStyleOptions'
 import { CONTENT_FONT_LANG } from '@/i18n/constants'
 import { getLocale } from '@/i18n/translate'
@@ -306,6 +307,27 @@ onUnmounted(() => {
   document.removeEventListener('click', closeContextMenu)
 })
 
+const isOpenShareDialog = ref(false)
+const shareDialogMode = ref<'share' | 'import'>('share')
+
+function openShareDialog() {
+  shareDialogMode.value = 'share'
+  isOpenShareDialog.value = true
+}
+
+function openImportDialog() {
+  shareDialogMode.value = 'import'
+  isOpenShareDialog.value = true
+}
+
+function onThemeImported() {
+  themeStore.applyCurrentTheme()
+  themeStore.updateCodeTheme()
+  const raw = editorStore.getContent()
+  renderStore.render(raw)
+  scrollToActiveTab()
+}
+
 function exportCurrentTheme() {
   const currentTab = cssContentConfig.value.tabs.find(tab => tab.id === cssContentConfig.value.active)
   if (!currentTab) {
@@ -472,6 +494,13 @@ function exportCurrentTheme() {
             </DropdownMenuItem>
             <DropdownMenuItem @click="exportCurrentTheme">
               <Download class="mr-2 size-4" /> {{ t('common.export') }}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="openShareDialog">
+              <Share2 class="mr-2 size-4" /> {{ t('cssEditor.shareTheme') }}
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="openImportDialog">
+              <Upload class="mr-2 size-4" /> {{ t('cssEditor.importTheme') }}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="isOpenTipsDialog = true">
@@ -721,6 +750,12 @@ function exportCurrentTheme() {
       </DialogFooter>
     </DialogContent>
   </Dialog>
+
+  <ThemeShareDialog
+    v-model:open="isOpenShareDialog"
+    :mode="shareDialogMode"
+    @imported="onThemeImported"
+  />
 </template>
 
 <style lang="less" scoped>

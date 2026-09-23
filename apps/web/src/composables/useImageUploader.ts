@@ -10,13 +10,22 @@ export function imageUploadCacheKey(host: string, hash: string): string {
   return `${host}:${hash}`
 }
 
+/** SHA-256 for Blob/File via Web Crypto. */
+export async function calculateImageHash(file: Blob): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const digest = await crypto.subtle.digest(`SHA-256`, buffer)
+  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, `0`)).join(``)
+}
+
+export async function getUploadedImageMap(): Promise<Record<string, string>> {
+  return (await store.getJSON<Record<string, string>>(STORAGE_KEY, {})) ?? {}
+}
+
 export function useImageUploader() {
   const isUploading = ref(false)
   const error = ref<string | null>(null)
 
-  const getStorageMap = async (): Promise<Record<string, string>> => {
-    return (await store.getJSON<Record<string, string>>(STORAGE_KEY, {})) ?? {}
-  }
+  const getStorageMap = getUploadedImageMap
 
   const updateStorageMap = async (hash: string, url: string) => {
     const map = await getStorageMap()
@@ -24,12 +33,7 @@ export function useImageUploader() {
     await store.setJSON(STORAGE_KEY, map)
   }
 
-  // SHA-256 for Blob/File via Web Crypto (replaces spark-md5)
-  const calculateHash = async (file: Blob): Promise<string> => {
-    const buffer = await file.arrayBuffer()
-    const digest = await crypto.subtle.digest(`SHA-256`, buffer)
-    return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, `0`)).join(``)
-  }
+  const calculateHash = calculateImageHash
 
   // URL → File (watch CORS)
   const urlToFile = async (url: string): Promise<File> => {

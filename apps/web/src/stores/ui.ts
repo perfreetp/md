@@ -48,6 +48,10 @@ export const useUIStore = defineStore(`ui`, () => {
   const enableScrollSync = store.reactive(addPrefix(`enableScrollSync`), true)
   const toggleScrollSync = useToggle(enableScrollSync)
 
+  // Draft version history: auto-snapshot interval (seconds) and max retained entries.
+  const historySnapshotInterval = store.reactive(addPrefix(`history_snapshot_interval`), 30)
+  const historyMaxCount = store.reactive(addPrefix(`history_max_count`), 10)
+
   const copyMode = store.reactive(addPrefix(`copyMode`), `txt`)
 
   const isShowCssEditor = store.reactive(`isShowCssEditor`, false)
@@ -251,6 +255,8 @@ export const useUIStore = defineStore(`ui`, () => {
     isOpenEmojiManager,
     enableImageReupload,
     enableScrollSync,
+    historySnapshotInterval,
+    historyMaxCount,
     copyMode,
 
     isShowCssEditor,

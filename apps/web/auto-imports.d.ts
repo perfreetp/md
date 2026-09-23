@@ -23,6 +23,7 @@ declare global {
   const buildAIHeaders: typeof import('./src/composables/useAIFetch').buildAIHeaders
   const buildPostTree: typeof import('./src/composables/usePostTree').buildPostTree
   const buildSlashCommands: typeof import('./src/composables/slashCommands').buildSlashCommands
+  const calculateImageHash: typeof import('./src/composables/useImageUploader').calculateImageHash
   const canDiscoverAIModels: typeof import('./src/composables/useDiscoverAIModels').canDiscoverAIModels
   const completeInitialPreviewBoot: typeof import('./src/composables/useInitialPreviewBoot').completeInitialPreviewBoot
   const computed: typeof import('vue').computed
@@ -69,6 +70,7 @@ declare global {
   const getCurrentWatcher: typeof import('vue').getCurrentWatcher
   const getThemeLabel: typeof import('./src/composables/useLocalizedStyleOptions').getThemeLabel
   const getUploadHostLabel: typeof import('./src/composables/useLocalizedUploadHosts').getUploadHostLabel
+  const getUploadedImageMap: typeof import('./src/composables/useImageUploader').getUploadedImageMap
   const h: typeof import('vue').h
   const ignorableWatch: typeof import('@vueuse/core').ignorableWatch
   const imageUploadCacheKey: typeof import('./src/composables/useImageUploader').imageUploadCacheKey
@@ -356,6 +358,7 @@ declare global {
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTransition: typeof import('@vueuse/core').useTransition
   const useUIStore: typeof import('./src/stores/ui').useUIStore
+  const useUploadQueueStore: typeof import('./src/stores/uploadQueue').useUploadQueueStore
   const useUrlSearchParams: typeof import('@vueuse/core').useUrlSearchParams
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
   const useVModel: typeof import('@vueuse/core').useVModel
@@ -413,6 +416,9 @@ declare global {
   // @ts-ignore
   export type { SyncStatus } from './src/stores/sync'
   import('./src/stores/sync')
+  // @ts-ignore
+  export type { UploadQueueItemStatus, UploadQueueItem } from './src/stores/uploadQueue'
+  import('./src/stores/uploadQueue')
   // @ts-ignore
   export type { SlashCommandGroup, SlashCommandItem } from './src/composables/slashCommands'
   import('./src/composables/slashCommands')

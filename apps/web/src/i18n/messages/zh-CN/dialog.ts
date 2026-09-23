@@ -251,6 +251,14 @@ export default {
       label: `图片转存`,
       hint: `复制时自动将图片转存到图床`,
     },
+    historyInterval: {
+      label: `历史快照间隔（秒）`,
+      hint: `每隔多少秒为当前文章自动保存一次历史快照`,
+    },
+    historyMaxCount: {
+      label: `历史快照保留份数`,
+      hint: `每篇文章最多保留的历史版本数量，超出后删除最早的版本`,
+    },
     wordCount: {
       label: `字数统计`,
       hint: `在预览文章顶部显示字数与阅读时间`,

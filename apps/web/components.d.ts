@@ -191,6 +191,7 @@ declare module 'vue' {
     TelegramConfigForm: typeof import('./src/components/editor/dialogs/upload-providers/TelegramConfigForm.vue')['default']
     TemplateDialog: typeof import('./src/components/editor/dialogs/TemplateDialog.vue')['default']
     Textarea: typeof import('./src/components/ui/textarea/Textarea.vue')['default']
+    ThemeShareDialog: typeof import('./src/components/editor/dialogs/ThemeShareDialog.vue')['default']
     ToolBoxPopover: typeof import('./src/components/ai/tool-box/ToolBoxPopover.vue')['default']
     Tooltip: typeof import('./src/components/ui/tooltip/Tooltip.vue')['default']
     TooltipContent: typeof import('./src/components/ui/tooltip/TooltipContent.vue')['default']
@@ -201,6 +202,7 @@ declare module 'vue' {
     UploadProviderForm: typeof import('./src/components/editor/dialogs/upload-providers/UploadProviderForm.vue')['default']
     UploadProviderSwitchField: typeof import('./src/components/editor/dialogs/upload-providers/UploadProviderSwitchField.vue')['default']
     UploadProviderTextField: typeof import('./src/components/editor/dialogs/upload-providers/UploadProviderTextField.vue')['default']
+    UploadQueuePanel: typeof import('./src/components/editor/UploadQueuePanel.vue')['default']
     UpyunConfigForm: typeof import('./src/components/editor/dialogs/upload-providers/UpyunConfigForm.vue')['default']
     VersionDiffViewer: typeof import('./src/components/editor/post-slider/VersionDiffViewer.vue')['default']
   }

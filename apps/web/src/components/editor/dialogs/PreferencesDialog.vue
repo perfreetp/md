@@ -3,6 +3,7 @@ import type { AppLocale } from '@/i18n/types'
 import { Settings } from '@lucide/vue'
 import PanelDialog from '@/components/shared/panel-dialog/PanelDialog.vue'
 import PanelSelect from '@/components/shared/panel-dialog/PanelSelect.vue'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -38,6 +39,8 @@ const {
   previewDevice,
   enableImageReupload,
   enableScrollSync,
+  historySnapshotInterval,
+  historyMaxCount,
 } = storeToRefs(uiStore)
 
 const { isCountStatus } = storeToRefs(themeStore)
@@ -70,6 +73,20 @@ const localeOptions = computed(() =>
 function setCountStatus(value: boolean) {
   isCountStatus.value = value
   editorRefresh()
+}
+
+function clampNumber(value: number, min: number, max: number, fallback: number): number {
+  if (!Number.isFinite(value))
+    return fallback
+  return Math.min(Math.max(Math.round(value), min), max)
+}
+
+function onHistoryIntervalChange(value: number) {
+  historySnapshotInterval.value = clampNumber(value, 5, 3600, 30)
+}
+
+function onHistoryMaxCountChange(value: number) {
+  historyMaxCount.value = clampNumber(value, 1, 100, 10)
 }
 
 function onLocaleChange(value: string) {
@@ -169,7 +186,7 @@ function onLocaleChange(value: string) {
           />
         </div>
 
-        <div class="flex items-center justify-between gap-4 py-3">
+        <div class="flex items-center justify-between gap-4 border-b py-3">
           <div class="min-w-0 space-y-0.5">
             <Label for="pref-image-reupload">{{ t('preferences.imageReupload.label') }}</Label>
             <p class="text-xs text-muted-foreground">
@@ -181,6 +198,42 @@ function onLocaleChange(value: string) {
             class="shrink-0"
             :model-value="enableImageReupload"
             @update:model-value="enableImageReupload = $event"
+          />
+        </div>
+
+        <div class="flex items-center justify-between gap-4 border-b py-3">
+          <div class="min-w-0 space-y-0.5">
+            <Label for="pref-history-interval">{{ t('preferences.historyInterval.label') }}</Label>
+            <p class="text-xs text-muted-foreground">
+              {{ t('preferences.historyInterval.hint') }}
+            </p>
+          </div>
+          <Input
+            id="pref-history-interval"
+            type="number"
+            class="w-24 shrink-0"
+            :model-value="historySnapshotInterval"
+            min="5"
+            max="3600"
+            @update:model-value="onHistoryIntervalChange(Number($event))"
+          />
+        </div>
+
+        <div class="flex items-center justify-between gap-4 py-3">
+          <div class="min-w-0 space-y-0.5">
+            <Label for="pref-history-max">{{ t('preferences.historyMaxCount.label') }}</Label>
+            <p class="text-xs text-muted-foreground">
+              {{ t('preferences.historyMaxCount.hint') }}
+            </p>
+          </div>
+          <Input
+            id="pref-history-max"
+            type="number"
+            class="w-24 shrink-0"
+            :model-value="historyMaxCount"
+            min="1"
+            max="100"
+            @update:model-value="onHistoryMaxCountChange(Number($event))"
           />
         </div>
       </TabsContent>

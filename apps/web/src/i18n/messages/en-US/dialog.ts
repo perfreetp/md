@@ -251,6 +251,14 @@ export default {
       label: `Image re-upload`,
       hint: `Re-upload images to your image host on copy`,
     },
+    historyInterval: {
+      label: `History snapshot interval (seconds)`,
+      hint: `How often a history snapshot of the current article is saved automatically`,
+    },
+    historyMaxCount: {
+      label: `History snapshots to keep`,
+      hint: `Maximum number of history versions kept per article; the oldest are removed beyond this limit`,
+    },
     wordCount: {
       label: `Word count`,
       hint: `Show word count and reading time at the top of the preview`,

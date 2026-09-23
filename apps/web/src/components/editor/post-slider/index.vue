@@ -30,7 +30,7 @@ function formatHistoryDatetime(datetime: number | string) {
   return formatLocalDateTime(datetime)
 }
 const uiStore = useUIStore()
-const { isDark, isMobile, isOpenPostSlider } = storeToRefs(uiStore)
+const { isDark, isMobile, isOpenPostSlider, historySnapshotInterval, historyMaxCount } = storeToRefs(uiStore)
 const { toggleShowImportMdDialog } = uiStore
 
 const postSliderMenu = providePostSliderMenu()
@@ -343,9 +343,25 @@ function recoverHistory() {
 }
 
 function confirmRestoreHistory() {
+  // Restoring the post currently open in the editor would discard unsaved
+  // edits (debounced, not yet flushed to the post store) — require a second
+  // confirmation only in that case.
+  const post = postStore.getPostById(currentPostId.value!)
+  const hasUnsavedChanges = Boolean(
+    post
+    && post.id === postStore.currentPostId
+    && editor.value
+    && editorStore.getContent() !== post.content,
+  )
+
+  if (!hasUnsavedChanges) {
+    recoverHistory()
+    return
+  }
+
   confirmStore.confirm({
     title: t('confirm.tip'),
-    description: t('post.restoreArticleDescription'),
+    description: t('post.restoreUnsavedDescription'),
     confirmText: t('post.restore'),
     onConfirm: () => recoverHistory(),
   })
@@ -1186,7 +1202,7 @@ function handleDragEnd() {
     <DialogContent class="sm:max-w-4xl">
       <DialogHeader>
         <DialogTitle>{{ t('post.historyTitle') }}</DialogTitle>
-        <DialogDescription>{{ t('post.historyDescription') }}</DialogDescription>
+        <DialogDescription>{{ t('post.historyDescription', { interval: historySnapshotInterval, max: historyMaxCount }) }}</DialogDescription>
       </DialogHeader>
 
       <div class="h-[50vh] flex gap-3 w-full min-w-0">
