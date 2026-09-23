@@ -16,8 +16,15 @@ export {
 } from './pdf'
 export { exportPNG } from './png'
 export {
+  PREVIEW_DEVICE_WIDTHS,
+  type PreviewDevice,
+  type WatermarkOptions,
+  type WatermarkPosition,
+} from './png-capture'
+export {
   DEFAULT_PNG_SEGMENT_HEIGHT,
   exportPNGSegments,
+  type ExportPNGSegmentsResult,
   PNG_SEGMENT_HEIGHTS,
 } from './png-segments'
 export { getExportStyles, getShareExportStyles } from './share-styles'

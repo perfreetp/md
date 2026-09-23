@@ -2,7 +2,7 @@
 import type { MarkdownHeading } from '@/lib/markdown/headings'
 import { StateEffect } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { ArrowUpDown, BookOpen, Clock, Columns2, Ellipsis, Eye, FileText, Keyboard, LogIn, Monitor, Moon, PenLine, Pilcrow, Share2, Smartphone, Sun, Type, User } from '@lucide/vue'
+import { ArrowUpDown, BookOpen, Clock, Columns2, Ellipsis, Eye, FileText, Keyboard, LogIn, Monitor, Moon, PenLine, Pilcrow, Share2, Smartphone, Sun, Tablet, Type, User } from '@lucide/vue'
 import NotificationBell from '@/components/editor/editor-header/NotificationBell.vue'
 import FooterDocumentSwitcher from '@/components/editor/footer/FooterDocumentSwitcher.vue'
 import FooterOutlinePopover from '@/components/editor/footer/FooterOutlinePopover.vue'
@@ -63,6 +63,15 @@ const nextLocaleOption = computed(() => getLocaleOption(getNextLocale(locale.val
 const languageTooltip = computed(() => {
   void i18nLocale.value
   return t(`footer.switchToLanguage`, { language: t(nextLocaleOption.value.labelKey) })
+})
+
+const nextPreviewDeviceLabel = computed(() => {
+  void i18nLocale.value
+  if (previewDevice.value === `mobile`)
+    return t(`footer.tabletPreview`)
+  if (previewDevice.value === `tablet`)
+    return t(`footer.desktopPreview`)
+  return t(`footer.mobilePreview`)
 })
 
 const accountTooltip = computed(() => {
@@ -339,7 +348,7 @@ const showDeviceToggle = computed(() => viewMode.value !== `edit` && !isMobile.v
         <Tooltip v-if="!isMobile">
           <TooltipTrigger as-child>
             <button
-              :aria-label="previewDevice === 'desktop' ? t('footer.mobilePreview') : t('footer.desktopPreview')"
+              :aria-label="nextPreviewDeviceLabel"
               class="flex cursor-pointer items-center rounded-sm px-1.5 py-0.5 transition-all duration-200"
               :class="showDeviceToggle
                 ? 'text-muted-foreground hover:bg-accent hover:text-foreground opacity-100'
@@ -347,11 +356,12 @@ const showDeviceToggle = computed(() => viewMode.value !== `edit` && !isMobile.v
               @click="uiStore.togglePreviewDevice()"
             >
               <Monitor v-if="previewDevice === 'desktop'" class="size-3" />
+              <Tablet v-else-if="previewDevice === 'tablet'" class="size-3" />
               <Smartphone v-else class="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="top" :side-offset="6" class="text-xs text-muted-foreground">
-            <p>{{ previewDevice === 'desktop' ? t('footer.mobilePreview') : t('footer.desktopPreview') }}</p>
+            <p>{{ nextPreviewDeviceLabel }}</p>
           </TooltipContent>
         </Tooltip>
 

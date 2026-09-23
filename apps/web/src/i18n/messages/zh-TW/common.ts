@@ -106,6 +106,7 @@ export default {
     exportPdf: `PDF 文件`,
     exportPng: `PNG 圖片`,
     exportPngSegments: `PNG 分段長圖`,
+    exportLongImage: `長圖匯出（浮水印 / 寬度）…`,
     exportPngSegmentHeight: `每段約 {height}px`,
     templateManage: `範本管理`,
     marketplace: `社群主題`,

@@ -1,4 +1,4 @@
-import type { PreviewDevice } from './png-capture'
+import type { PreviewDevice, WatermarkOptions } from './png-capture'
 import { sanitizeTitle } from '@md/shared/utils/basicHelpers'
 import { downloadFile } from '@md/shared/utils/fileHelpers'
 import { delay } from '@/lib/delay'
@@ -19,7 +19,15 @@ export interface ExportPNGSegmentsOptions {
   previewDevice: PreviewDevice
   /** Soft ceiling in CSS pixels; a single block taller than this is not split. */
   maxSegmentHeight: number
+  watermark?: WatermarkOptions
   onProgress?: (done: number, total: number) => void
+}
+
+export interface ExportPNGSegmentsResult {
+  count: number
+  /** Data URL of the downloaded file (single PNG or zip), for export records. */
+  dataUrl: string | null
+  kind: `png` | `zip`
 }
 
 /**
@@ -98,7 +106,7 @@ function collectBlocks(container: HTMLElement): HTMLElement[] {
   })
 }
 
-async function downloadSegmentsAsZip(segments: Blob[], baseName: string) {
+async function downloadSegmentsAsZip(segments: Blob[], baseName: string): Promise<string> {
   const { zip } = await import(`fflate`)
 
   const files: Record<string, Uint8Array> = {}
@@ -118,9 +126,10 @@ async function downloadSegmentsAsZip(segments: Blob[], baseName: string) {
   finally {
     URL.revokeObjectURL(url)
   }
+  return blobToDataUrl(new Blob([archive], { type: `application/zip` }))
 }
 
-function downloadSingleSegment(segment: Blob, baseName: string) {
+function downloadSingleSegment(segment: Blob, baseName: string): Promise<string> {
   const url = URL.createObjectURL(segment)
   try {
     downloadFile(url, `${baseName}.png`, `image/png`)
@@ -128,6 +137,16 @@ function downloadSingleSegment(segment: Blob, baseName: string) {
   finally {
     URL.revokeObjectURL(url)
   }
+  return blobToDataUrl(segment)
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
 }
 
 /**
@@ -137,24 +156,24 @@ function downloadSingleSegment(segment: Blob, baseName: string) {
  * because a full-length capture is what hits the browser's canvas size limit on
  * long articles — the very case this export is for.
  *
- * @returns the number of images produced, or 0 if there was nothing to export.
+ * @returns the images produced and the downloaded file, or 0 count if empty.
  */
 export async function exportPNGSegments(
   title: string = `untitled`,
   options: ExportPNGSegmentsOptions,
-): Promise<number> {
+): Promise<ExportPNGSegmentsResult> {
   await waitForPreviewReady()
 
-  const offScreen = await createOffScreenPreview(options.previewDevice)
+  const offScreen = await createOffScreenPreview(options.previewDevice, options.watermark)
   if (!offScreen)
-    return 0
+    return { count: 0, dataUrl: null, kind: `png` }
 
   try {
     await delay(100)
 
     const blocks = collectBlocks(resolveBlockContainer(offScreen.content))
     if (blocks.length === 0)
-      return 0
+      return { count: 0, dataUrl: null, kind: `png` }
 
     const segments = planSegments(measureBlocks(blocks), options.maxSegmentHeight)
     const captureOptions = getPngCaptureOptions()
@@ -186,15 +205,13 @@ export async function exportPNGSegments(
     }
 
     if (images.length === 0)
-      return 0
+      return { count: 0, dataUrl: null, kind: `png` }
 
     const baseName = sanitizeTitle(title)
     if (images.length === 1)
-      downloadSingleSegment(images[0], baseName)
-    else
-      await downloadSegmentsAsZip(images, baseName)
+      return { count: 1, dataUrl: await downloadSingleSegment(images[0], baseName), kind: `png` }
 
-    return images.length
+    return { count: images.length, dataUrl: await downloadSegmentsAsZip(images, baseName), kind: `zip` }
   }
   finally {
     offScreen.cleanup()

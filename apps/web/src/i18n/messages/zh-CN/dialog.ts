@@ -237,6 +237,7 @@ export default {
     },
     previewDeviceOption: {
       desktop: `电脑`,
+      tablet: `平板`,
       mobile: `手机`,
     },
     scrollSync: {
@@ -255,6 +256,44 @@ export default {
       label: `字数统计`,
       hint: `在预览文章顶部显示字数与阅读时间`,
     },
+  },
+  pngExport: {
+    title: `长图导出`,
+    description: `把当前渲染效果导出为长图，可设置导出宽度、分段与水印。`,
+    device: {
+      label: `导出宽度`,
+      mobile: `手机`,
+      tablet: `平板`,
+      desktop: `桌面`,
+    },
+    mode: {
+      label: `导出方式`,
+      single: `整幅长图`,
+      segments: `分段导出`,
+    },
+    segmentHeight: {
+      label: `分段高度`,
+    },
+    watermark: {
+      label: `文字水印`,
+      hint: `在导出的图片上叠加文字水印`,
+    },
+    watermarkText: {
+      label: `水印内容`,
+      placeholder: `请输入水印文字`,
+    },
+    watermarkPosition: {
+      label: `水印位置`,
+      topLeft: `左上`,
+      topRight: `右上`,
+      center: `居中`,
+      bottomLeft: `左下`,
+      bottomRight: `右下`,
+    },
+    watermarkOpacity: {
+      label: `水印透明度（{value}%）`,
+    },
+    export: `导出长图`,
   },
   pdfExport: {
     title: `导出 PDF`,

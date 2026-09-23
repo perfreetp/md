@@ -237,6 +237,7 @@ export default {
     },
     previewDeviceOption: {
       desktop: `デスクトップ`,
+      tablet: `タブレット`,
       mobile: `モバイル`,
     },
     scrollSync: {
@@ -255,6 +256,44 @@ export default {
       label: `文字数カウント`,
       hint: `プレビュー上部に文字数と読了時間を表示`,
     },
+  },
+  pngExport: {
+    title: `長画像エクスポート`,
+    description: `現在のレンダリング結果を長画像として書き出します。幅・分割・透かしを設定できます。`,
+    device: {
+      label: `出力幅`,
+      mobile: `スマホ`,
+      tablet: `タブレット`,
+      desktop: `デスクトップ`,
+    },
+    mode: {
+      label: `出力方式`,
+      single: `1 枚の長画像`,
+      segments: `分割して出力`,
+    },
+    segmentHeight: {
+      label: `分割の高さ`,
+    },
+    watermark: {
+      label: `テキスト透かし`,
+      hint: `書き出した画像にテキスト透かしを重ねます`,
+    },
+    watermarkText: {
+      label: `透かしの内容`,
+      placeholder: `透かしのテキストを入力`,
+    },
+    watermarkPosition: {
+      label: `透かしの位置`,
+      topLeft: `左上`,
+      topRight: `右上`,
+      center: `中央`,
+      bottomLeft: `左下`,
+      bottomRight: `右下`,
+    },
+    watermarkOpacity: {
+      label: `透かしの不透明度（{value}%）`,
+    },
+    export: `長画像をエクスポート`,
   },
   pdfExport: {
     title: `PDF をエクスポート`,

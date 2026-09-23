@@ -57,6 +57,7 @@ const viewModeOptions = computed(() => [
 
 const previewDeviceOptions = computed(() => [
   { value: `desktop`, label: t(`preferences.previewDeviceOption.desktop`) },
+  { value: `tablet`, label: t(`preferences.previewDeviceOption.tablet`) },
   { value: `mobile`, label: t(`preferences.previewDeviceOption.mobile`) },
 ] as const)
 

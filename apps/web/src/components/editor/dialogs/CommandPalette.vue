@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PaletteCommand } from '@/composables/useCommandPalette'
-import { Search } from '@lucide/vue'
+import { FileText, Search } from '@lucide/vue'
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,26 @@ import {
 import { useCommandPalette } from '@/composables/useCommandPalette'
 import { useUIStore } from '@/stores/ui'
 
+interface PaletteEntry {
+  key: string
+  kind: `command` | `post`
+  group: string
+  label: string
+  shortcut?: string[]
+  command?: PaletteCommand
+  postId?: string
+}
+
 const { t, locale } = useI18n()
 const uiStore = useUIStore()
 const { isShowCommandPalette } = storeToRefs(uiStore)
-const { buildCommands } = useCommandPalette()
+const {
+  buildCommands,
+  recordCommandUsage,
+  getRecentCommands,
+  searchPosts,
+  openPost,
+} = useCommandPalette()
 
 const query = ref(``)
 const activeIndex = ref(0)
@@ -40,15 +56,42 @@ const filteredCommands = computed(() => {
   })
 })
 
-const groupedCommands = computed(() => {
-  const groups = new Map<string, PaletteCommand[]>()
-  for (const cmd of filteredCommands.value) {
-    const list = groups.get(cmd.group) ?? []
-    list.push(cmd)
-    groups.set(cmd.group, list)
+const matchedPosts = computed(() => searchPosts(query.value))
+
+const isSearching = computed(() => query.value.trim().length > 0)
+
+const groupedEntries = computed(() => {
+  const groups = new Map<string, PaletteEntry[]>()
+  const push = (entry: PaletteEntry) => {
+    const list = groups.get(entry.group) ?? []
+    list.push(entry)
+    groups.set(entry.group, list)
   }
+
+  // Recent commands lead the palette on an empty query; while searching they
+  // stay visible when they match the filter.
+  const recent = getRecentCommands(filteredCommands.value)
+  if (recent.length) {
+    for (const cmd of recent)
+      push({ key: `recent:${cmd.id}`, kind: `command`, group: t(`commandPalette.recent`), label: cmd.label, shortcut: cmd.shortcut, command: cmd })
+  }
+
+  for (const cmd of filteredCommands.value) {
+    // Recent entries lead the list; skip them in their regular group.
+    if (recent.some(r => r.id === cmd.id))
+      continue
+    push({ key: `cmd:${cmd.id}`, kind: `command`, group: cmd.group, label: cmd.label, shortcut: cmd.shortcut, command: cmd })
+  }
+
+  if (isSearching.value) {
+    for (const post of matchedPosts.value)
+      push({ key: `post:${post.id}`, kind: `post`, group: t(`commandPalette.group.posts`), label: post.title, postId: post.id })
+  }
+
   return [...groups.entries()]
 })
+
+const flatEntries = computed(() => groupedEntries.value.flatMap(([, entries]) => entries))
 
 watch(isShowCommandPalette, (open) => {
   if (open) {
@@ -58,7 +101,12 @@ watch(isShowCommandPalette, (open) => {
   }
 })
 
-watch(filteredCommands, () => {
+watch(flatEntries, () => {
+  if (activeIndex.value >= flatEntries.value.length)
+    activeIndex.value = 0
+})
+
+watch(query, () => {
   activeIndex.value = 0
 })
 
@@ -85,17 +133,31 @@ function waitForDismissLayer() {
 }
 
 async function runCommand(cmd: PaletteCommand) {
+  recordCommandUsage(cmd.id)
   close()
   await nextTick()
   await waitForDismissLayer()
   await cmd.action()
 }
 
-function getFlatIndex(groupIdx: number, cmdIdx: number) {
+async function openPostEntry(postId: string) {
+  close()
+  await nextTick()
+  openPost(postId)
+}
+
+function runEntry(entry: PaletteEntry) {
+  if (entry.kind === `post` && entry.postId)
+    void openPostEntry(entry.postId)
+  else if (entry.command)
+    void runCommand(entry.command)
+}
+
+function getFlatIndex(groupIdx: number, entryIdx: number) {
   let index = 0
   for (let i = 0; i < groupIdx; i++)
-    index += groupedCommands.value[i][1].length
-  return index + cmdIdx
+    index += groupedEntries.value[i][1].length
+  return index + entryIdx
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -105,7 +167,7 @@ function onKeydown(event: KeyboardEvent) {
     return
   }
 
-  const count = filteredCommands.value.length
+  const count = flatEntries.value.length
 
   if (event.key === `ArrowDown`) {
     event.preventDefault()
@@ -119,14 +181,14 @@ function onKeydown(event: KeyboardEvent) {
   }
   else if (event.key === `Enter`) {
     event.preventDefault()
-    const cmd = filteredCommands.value[activeIndex.value]
-    if (cmd)
-      void runCommand(cmd)
+    const entry = flatEntries.value[activeIndex.value]
+    if (entry)
+      runEntry(entry)
   }
 }
 
-function isActive(groupIdx: number, cmdIdx: number) {
-  return activeIndex.value === getFlatIndex(groupIdx, cmdIdx)
+function isActive(groupIdx: number, entryIdx: number) {
+  return activeIndex.value === getFlatIndex(groupIdx, entryIdx)
 }
 </script>
 
@@ -153,25 +215,28 @@ function isActive(groupIdx: number, cmdIdx: number) {
       </div>
 
       <div ref="scrollContainerRef" class="max-h-[min(52vh,24rem)] overflow-y-auto p-1">
-        <template v-if="groupedCommands.length">
-          <template v-for="([group, items], groupIdx) in groupedCommands" :key="group">
+        <template v-if="groupedEntries.length">
+          <template v-for="([group, entries], groupIdx) in groupedEntries" :key="group">
             <p class="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               {{ group }}
             </p>
             <button
-              v-for="(cmd, cmdIdx) in items"
-              :key="cmd.id"
+              v-for="(entry, entryIdx) in entries"
+              :key="entry.key"
               type="button"
               class="flex w-full cursor-pointer items-center justify-between rounded-md px-2 py-2 text-left text-sm transition-colors"
-              :class="isActive(groupIdx, cmdIdx) ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60'"
-              :data-active="isActive(groupIdx, cmdIdx)"
-              @mouseenter="activeIndex = getFlatIndex(groupIdx, cmdIdx)"
-              @click="runCommand(cmd)"
+              :class="isActive(groupIdx, entryIdx) ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60'"
+              :data-active="isActive(groupIdx, entryIdx)"
+              @mouseenter="activeIndex = getFlatIndex(groupIdx, entryIdx)"
+              @click="runEntry(entry)"
             >
-              <span>{{ cmd.label }}</span>
-              <span v-if="cmd.shortcut?.length" class="flex items-center gap-0.5 text-xs text-muted-foreground">
+              <span class="flex min-w-0 items-center gap-2">
+                <FileText v-if="entry.kind === 'post'" class="size-3.5 shrink-0 text-muted-foreground" />
+                <span class="truncate">{{ entry.label }}</span>
+              </span>
+              <span v-if="entry.shortcut?.length" class="flex items-center gap-0.5 text-xs text-muted-foreground">
                 <kbd
-                  v-for="key in cmd.shortcut"
+                  v-for="key in entry.shortcut"
                   :key="key"
                   class="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]"
                 >

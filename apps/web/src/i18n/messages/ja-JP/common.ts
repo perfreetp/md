@@ -106,6 +106,7 @@ export default {
     exportPdf: `PDF`,
     exportPng: `PNG`,
     exportPngSegments: `PNG（分割）`,
+    exportLongImage: `長画像エクスポート（透かし / 幅）…`,
     exportPngSegmentHeight: `1 枚あたり約 {height}px`,
     templateManage: `テンプレート`,
     marketplace: `コミュニティテーマ`,

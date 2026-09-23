@@ -2,7 +2,7 @@
 import type { DecorationSet } from '@codemirror/view'
 import { StateEffect, StateField } from '@codemirror/state'
 import { Decoration, EditorView } from '@codemirror/view'
-import { CaseSensitive, ChevronDown, ChevronRight, ChevronUp, Regex, Replace, ReplaceAll, WholeWord, X } from '@lucide/vue'
+import { CaseSensitive, ChevronDown, ChevronRight, ChevronUp, Regex, Replace, ReplaceAll, TextCursorInput, WholeWord, X } from '@lucide/vue'
 
 const props = defineProps<{
   editorView: EditorView
@@ -16,6 +16,7 @@ const searchInputRef = ref<{ focus: () => void, select: () => void } | null>(nul
 const searchWord = ref(``)
 const isRegex = ref(false)
 const isCaseSensitive = ref(false)
+const isWholeWord = ref(false)
 const findInSelection = ref(false)
 const indexOfMatch = ref(0)
 const showReplace = ref(false)
@@ -58,7 +59,7 @@ onMounted(() => {
   }
 })
 
-watch([searchWord, isRegex, isCaseSensitive, findInSelection], () => {
+watch([searchWord, isRegex, isCaseSensitive, isWholeWord, findInSelection], () => {
   const debouncedSearch = useDebounceFn(() => {
     matchPositions.value = []
 
@@ -163,7 +164,8 @@ function findAllMatches() {
     if (isRegex.value) {
       try {
         const flags = `gm${isCaseSensitive.value ? `` : `i`}`
-        const regex = new RegExp(searchTerm, flags)
+        const pattern = isWholeWord.value ? `\\b(?:${searchTerm})\\b` : searchTerm
+        const regex = new RegExp(pattern, flags)
         let match
         while (true) {
           match = regex.exec(content)
@@ -199,6 +201,11 @@ function findAllMatches() {
         let index = lineForCompare.indexOf(searchTermForCompare, startIndex)
 
         while (index !== -1) {
+          if (isWholeWord.value && !isWholeWordMatch(line, index, searchTerm.length)) {
+            startIndex = index + 1
+            index = lineForCompare.indexOf(searchTermForCompare, startIndex)
+            continue
+          }
           const actualLineObj = props.editorView.state.doc.lineAt(searchFrom)
           const actualLineNumber = actualLineObj.number - 1 + lineIndex
 
@@ -217,6 +224,15 @@ function findAllMatches() {
   if (matchPositions.value.length > 0 && indexOfMatch.value >= matchPositions.value.length) {
     indexOfMatch.value = matchPositions.value.length - 1
   }
+}
+
+function isWordChar(ch: string | undefined): boolean {
+  return !!ch && /[\p{L}\p{N}_]/u.test(ch)
+}
+
+/** A match is whole-word when the characters around it are not word characters. */
+function isWholeWordMatch(line: string, index: number, length: number): boolean {
+  return !isWordChar(line[index - 1]) && !isWordChar(line[index + length])
 }
 
 function nextMatch() {
@@ -240,6 +256,10 @@ function toggleRegex() {
 
 function toggleCaseSensitive() {
   isCaseSensitive.value = !isCaseSensitive.value
+}
+
+function toggleWholeWord() {
+  isWholeWord.value = !isWholeWord.value
 }
 
 function toggleFindInSelection() {
@@ -317,6 +337,7 @@ function handleReplace() {
     selection: { anchor: fromPos + insertText.length },
   })
   findAllMatches()
+  toast.success(t(`search.replacedOne`, { count: numberOfMatches.value }))
 }
 
 function handleReplaceAll() {
@@ -324,6 +345,8 @@ function handleReplaceAll() {
     return
   if (!currentMatchPosition.value)
     return
+
+  const replacedCount = numberOfMatches.value
 
   // Replace from end to start to avoid position drift
   const sortedPositions = [...matchPositions.value].sort((a, b) => {
@@ -357,6 +380,7 @@ function handleReplaceAll() {
 
   props.editorView.dispatch({ changes })
   findAllMatches()
+  toast.success(t(`search.replacedAll`, { count: replacedCount }))
 }
 
 function setSearchWord(word: string) {
@@ -434,7 +458,7 @@ defineExpose({
             ref="searchInputRef"
             v-model="searchWord"
             :placeholder="t('search.find')"
-            class="h-7 w-full min-w-0 pr-16 text-sm"
+            class="h-7 w-full min-w-0 pr-[5.5rem] text-sm"
             @keydown="handleSearchInputKeyDown"
           />
           <div class="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
@@ -463,13 +487,24 @@ defineExpose({
             <Button
               variant="ghost"
               size="xs"
+              :title="t('search.wholeWord')"
+              :aria-label="t('search.wholeWord')"
+              class="h-5 w-5 p-0"
+              :class="{ 'bg-accent': isWholeWord }"
+              @click="toggleWholeWord"
+            >
+              <WholeWord class="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
               :title="t('search.findInSelection')"
               :aria-label="t('search.findInSelection')"
               class="h-5 w-5 p-0"
               :class="{ 'bg-accent': findInSelection }"
               @click="toggleFindInSelection"
             >
-              <WholeWord class="h-3 w-3" />
+              <TextCursorInput class="h-3 w-3" />
             </Button>
           </div>
         </div>

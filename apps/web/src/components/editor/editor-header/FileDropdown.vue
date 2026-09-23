@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cloud, Download, FileCode, FileCog, FileText, FolderKanban, FolderOpen, Package, Rows3, Settings, Share2, Upload } from '@lucide/vue'
+import { Cloud, Download, FileCode, FileCog, FileText, FolderKanban, FolderOpen, Image, Package, Rows3, Settings, Share2, Upload } from '@lucide/vue'
 import { PNG_SEGMENT_HEIGHTS } from '@/services/export'
 import { isShareUiEnabled } from '@/services/share/client'
 import { isSyncUiEnabled } from '@/services/sync/client'
@@ -22,6 +22,7 @@ const uiStore = useUIStore()
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
 const { toggleShowTemplateDialog, toggleShowImportMdDialog, toggleShowSyncDialog, toggleShowEditorStateDialog, toggleShowPreferencesDialog, openShareDialog, openPdfExportDialog } = uiStore
+const { openPngExportDialog } = uiStore
 const showSyncUi = isSyncUiEnabled()
 const showShareUi = isShareUiEnabled()
 
@@ -59,6 +60,10 @@ function downloadAsSegmentedImages(maxSegmentHeight: number) {
 
 function exportEditorContent2PDF() {
   openPdfExportDialog()
+}
+
+function openLongImageExport() {
+  openPngExportDialog()
 }
 </script>
 
@@ -115,6 +120,10 @@ function exportEditorContent2PDF() {
           <MenubarItem @click="downloadAsCardImage()">
             <Download class="mr-2 size-4" />
             {{ t('menu.exportPng') }}
+          </MenubarItem>
+          <MenubarItem @click="openLongImageExport()">
+            <Image class="mr-2 size-4" />
+            {{ t('menu.exportLongImage') }}
           </MenubarItem>
           <MenubarSub>
             <MenubarSubTrigger>

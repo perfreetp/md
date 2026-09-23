@@ -1,7 +1,29 @@
-import type { PdfExportOptions } from '@/services/export'
-import { DEFAULT_PDF_EXPORT_OPTIONS, normalizePdfExportOptions } from '@/services/export'
+import type { PdfExportOptions, PreviewDevice, WatermarkPosition } from '@/services/export'
+import { DEFAULT_PDF_EXPORT_OPTIONS, DEFAULT_PNG_SEGMENT_HEIGHT, normalizePdfExportOptions } from '@/services/export'
 import { store } from '@/storage'
 import { addPrefix } from '@/storage/prefix'
+
+/** Persisted long-image export settings (watermark, width, segmentation). */
+export interface PngExportOptions {
+  device: PreviewDevice
+  mode: `single` | `segments`
+  segmentHeight: number
+  watermarkEnabled: boolean
+  watermarkText: string
+  watermarkPosition: WatermarkPosition
+  /** 0–1 */
+  watermarkOpacity: number
+}
+
+export const DEFAULT_PNG_EXPORT_OPTIONS: PngExportOptions = {
+  device: `mobile`,
+  mode: `single`,
+  segmentHeight: DEFAULT_PNG_SEGMENT_HEIGHT,
+  watermarkEnabled: false,
+  watermarkText: ``,
+  watermarkPosition: `bottomRight`,
+  watermarkOpacity: 0.3,
+}
 
 /** Global UI state: dark mode, sidebars, dialogs, view mode, etc. */
 export const useUIStore = defineStore(`ui`, () => {
@@ -31,15 +53,34 @@ export const useUIStore = defineStore(`ui`, () => {
     viewMode.value = mode
   }
 
-  // previewDevice: desktop | mobile (simulated)
-  const previewDevice = store.reactive<'desktop' | 'mobile'>(`previewDevice`, `mobile`)
+  // previewDevice: desktop | tablet | mobile (simulated)
+  const previewDevice = store.reactive<PreviewDevice>(`previewDevice`, `mobile`)
 
-  function setPreviewDevice(device: 'desktop' | 'mobile') {
+  function setPreviewDevice(device: PreviewDevice) {
     previewDevice.value = device
   }
 
   function togglePreviewDevice() {
-    previewDevice.value = previewDevice.value === `desktop` ? `mobile` : `desktop`
+    const order: PreviewDevice[] = [`mobile`, `tablet`, `desktop`]
+    const idx = order.indexOf(previewDevice.value)
+    previewDevice.value = order[(idx + 1) % order.length]
+  }
+
+  const pngExportOptions = store.reactive<PngExportOptions>(
+    addPrefix(`png_export_options`),
+    { ...DEFAULT_PNG_EXPORT_OPTIONS },
+  )
+
+  const isShowPngExportDialog = ref(false)
+
+  function openPngExportDialog() {
+    // Backfill keys added after the options were first persisted.
+    pngExportOptions.value = { ...DEFAULT_PNG_EXPORT_OPTIONS, ...pngExportOptions.value }
+    isShowPngExportDialog.value = true
+  }
+
+  function closePngExportDialog() {
+    isShowPngExportDialog.value = false
   }
 
   const enableImageReupload = store.reactive(addPrefix(`enableImageReupload`), false)
@@ -290,6 +331,10 @@ export const useUIStore = defineStore(`ui`, () => {
     isShowPdfExportDialog,
     openPdfExportDialog,
     pdfExportOptions,
+    isShowPngExportDialog,
+    openPngExportDialog,
+    closePngExportDialog,
+    pngExportOptions,
     isShowAboutDialog,
     toggleShowAboutDialog,
     isShowFundDialog,

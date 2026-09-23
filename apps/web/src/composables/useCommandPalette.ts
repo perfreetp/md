@@ -5,8 +5,11 @@ import { t } from '@/i18n/translate'
 import { isAccountUiEnabled } from '@/services/account/config'
 import { isShareUiEnabled } from '@/services/share/client'
 import { isSyncUiEnabled } from '@/services/sync/client'
+import { store } from '@/storage'
+import { addPrefix } from '@/storage/prefix'
 import { useEditorStore } from '@/stores/editor'
 import { useLocaleStore } from '@/stores/locale'
+import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
 
 export interface PaletteCommand {
@@ -18,11 +21,51 @@ export interface PaletteCommand {
   action: () => void | Promise<void>
 }
 
+export interface PalettePostMatch {
+  id: string
+  title: string
+}
+
+const MAX_RECENT_COMMANDS = 6
+const MAX_POST_MATCHES = 8
+
 export function useCommandPalette() {
   const uiStore = useUIStore()
   const editorStore = useEditorStore()
   const localeStore = useLocaleStore()
+  const postStore = usePostStore()
   const { formatContent } = useEditorDocumentActions()
+
+  /** Ids of recently executed commands, most recent first. */
+  const recentCommandIds = store.reactive<string[]>(addPrefix(`command_palette_recent`), [])
+
+  function recordCommandUsage(id: string) {
+    recentCommandIds.value = [id, ...recentCommandIds.value.filter(existing => existing !== id)]
+      .slice(0, MAX_RECENT_COMMANDS)
+  }
+
+  /** Recently used commands that still exist, most recent first. */
+  function getRecentCommands(commands: PaletteCommand[]): PaletteCommand[] {
+    const byId = new Map(commands.map(cmd => [cmd.id, cmd]))
+    return recentCommandIds.value
+      .map(id => byId.get(id))
+      .filter((cmd): cmd is PaletteCommand => Boolean(cmd))
+  }
+
+  /** Posts whose title matches the query, for the palette's jump-to-post group. */
+  function searchPosts(query: string): PalettePostMatch[] {
+    const q = query.trim().toLowerCase()
+    if (!q)
+      return []
+    return postStore.posts
+      .filter(post => post.title.toLowerCase().includes(q))
+      .slice(0, MAX_POST_MATCHES)
+      .map(post => ({ id: post.id, title: post.title }))
+  }
+
+  function openPost(id: string) {
+    postStore.currentPostId = id
+  }
 
   function withEditor(run: (view: EditorView) => void | Promise<void>) {
     const view = editorStore.editor ? toRaw(editorStore.editor) as EditorView : null
@@ -146,6 +189,13 @@ export function useCommandPalette() {
         action: () => { uiStore.toggleShowEditorStateDialog(true) },
       },
       {
+        id: `export-long-image`,
+        label: t(`menu.exportLongImage`),
+        group: t(`commandPalette.group.file`),
+        keywords: [`长图`, `导出`, `图片`, `水印`, `export`, `png`, `image`, `watermark`],
+        action: () => uiStore.openPngExportDialog(),
+      },
+      {
         id: `find`,
         label: t(`menu.find`),
         group: t(`commandPalette.group.edit`),
@@ -249,5 +299,10 @@ export function useCommandPalette() {
   return {
     buildCommands,
     paletteShortcutLabel,
+    recentCommandIds,
+    recordCommandUsage,
+    getRecentCommands,
+    searchPosts,
+    openPost,
   }
 }

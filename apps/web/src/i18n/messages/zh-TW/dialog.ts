@@ -237,6 +237,7 @@ export default {
     },
     previewDeviceOption: {
       desktop: `電腦`,
+      tablet: `平板`,
       mobile: `手機`,
     },
     scrollSync: {
@@ -255,6 +256,44 @@ export default {
       label: `字數統計`,
       hint: `在預覽文章頂部顯示字數與閱讀時間`,
     },
+  },
+  pngExport: {
+    title: `長圖匯出`,
+    description: `把目前渲染效果匯出為長圖，可設定匯出寬度、分段與浮水印。`,
+    device: {
+      label: `匯出寬度`,
+      mobile: `手機`,
+      tablet: `平板`,
+      desktop: `桌面`,
+    },
+    mode: {
+      label: `匯出方式`,
+      single: `整幅長圖`,
+      segments: `分段匯出`,
+    },
+    segmentHeight: {
+      label: `分段高度`,
+    },
+    watermark: {
+      label: `文字浮水印`,
+      hint: `在匯出的圖片上疊加文字浮水印`,
+    },
+    watermarkText: {
+      label: `浮水印內容`,
+      placeholder: `請輸入浮水印文字`,
+    },
+    watermarkPosition: {
+      label: `浮水印位置`,
+      topLeft: `左上`,
+      topRight: `右上`,
+      center: `置中`,
+      bottomLeft: `左下`,
+      bottomRight: `右下`,
+    },
+    watermarkOpacity: {
+      label: `浮水印透明度（{value}%）`,
+    },
+    export: `匯出長圖`,
   },
   pdfExport: {
     title: `匯出 PDF`,

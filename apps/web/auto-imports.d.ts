@@ -9,6 +9,7 @@
 export {}
 declare global {
   const BUILTIN_QUICK_COMMAND_IDS: typeof import('./src/stores/quickCommands').BUILTIN_QUICK_COMMAND_IDS
+  const DEFAULT_PNG_EXPORT_OPTIONS: typeof import('./src/stores/ui').DEFAULT_PNG_EXPORT_OPTIONS
   const EffectScope: typeof import('vue').EffectScope
   const SLASH_BASIC_BLOCK_IDS: typeof import('./src/composables/slashCommands').SLASH_BASIC_BLOCK_IDS
   const SLASH_BASIC_FORMAT_IDS: typeof import('./src/composables/slashCommands').SLASH_BASIC_FORMAT_IDS
@@ -396,6 +397,9 @@ declare global {
   export type { CssContentConfig } from './src/stores/cssEditor'
   import('./src/stores/cssEditor')
   // @ts-ignore
+  export type { ExportRecord } from './src/stores/export'
+  import('./src/stores/export')
+  // @ts-ignore
   export type { FileSystemNode } from './src/stores/folderSource'
   import('./src/stores/folderSource')
   // @ts-ignore
@@ -414,13 +418,16 @@ declare global {
   export type { SyncStatus } from './src/stores/sync'
   import('./src/stores/sync')
   // @ts-ignore
+  export type { PngExportOptions } from './src/stores/ui'
+  import('./src/stores/ui')
+  // @ts-ignore
   export type { SlashCommandGroup, SlashCommandItem } from './src/composables/slashCommands'
   import('./src/composables/slashCommands')
   // @ts-ignore
   export type { SSECallbacks } from './src/composables/useAIFetch'
   import('./src/composables/useAIFetch')
   // @ts-ignore
-  export type { PaletteCommand } from './src/composables/useCommandPalette'
+  export type { PaletteCommand, PalettePostMatch } from './src/composables/useCommandPalette'
   import('./src/composables/useCommandPalette')
   // @ts-ignore
   export type { UploadHostValue } from './src/composables/useLocalizedUploadHosts'

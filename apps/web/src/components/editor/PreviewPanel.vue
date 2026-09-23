@@ -22,7 +22,11 @@ const { isDark, isMobile, viewMode, previewDevice } = storeToRefs(uiStore)
 const effectivePreviewWidth = computed(() => {
   if (isMobile.value)
     return `w-full`
-  return previewDevice.value === `mobile` ? `w-[375px]` : `w-full`
+  if (previewDevice.value === `mobile`)
+    return `w-[375px]`
+  if (previewDevice.value === `tablet`)
+    return `w-[768px]`
+  return `w-full`
 })
 
 const previewRef = useTemplateRef<HTMLDivElement>(`previewRef`)

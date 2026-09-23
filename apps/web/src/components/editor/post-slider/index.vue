@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Download, Ellipsis, FileText, Plus, Regex, Replace, ReplaceAll, Search, Upload, X } from '@lucide/vue'
+import { CheckSquare, ChevronsDownUp, ChevronsUpDown, Download, Ellipsis, FileText, Image, Plus, Regex, Replace, ReplaceAll, Search, Upload, X } from '@lucide/vue'
 import { CONTENT_FONT_LANG } from '@/i18n/constants'
 import { formatLocalDateTime } from '@/i18n/translate'
 import { copyPlain } from '@/lib/browser/clipboard'
@@ -24,6 +24,7 @@ const confirmStore = useConfirmStore()
 // Overrides the auto-imported component so diff-match-patch stays out of this
 // chunk and only loads when the diff tab is first shown.
 const VersionDiffViewer = defineAsyncComponent(() => import('./VersionDiffViewer.vue'))
+const ExportRecordsPanel = defineAsyncComponent(() => import('./ExportRecordsPanel.vue'))
 
 function formatHistoryDatetime(datetime: number | string) {
   void locale.value
@@ -358,11 +359,13 @@ const replaceQuery = ref(``)
 const showReplace = ref(true)
 const isRegex = ref(false)
 const isCaseSensitive = ref(false)
+const showExportRecords = ref(false)
 
 function toggleSearch() {
   postSliderMenu.closeMenu()
   isSearching.value = !isSearching.value
   if (isSearching.value) {
+    showExportRecords.value = false
     nextTick(() => searchInputRef.value?.focus())
   }
   else {
@@ -377,6 +380,26 @@ function closeSearch() {
   searchQuery.value = ``
   replaceQuery.value = ``
   showReplace.value = false
+}
+
+function toggleExportRecords() {
+  postSliderMenu.closeMenu()
+  showExportRecords.value = !showExportRecords.value
+  if (showExportRecords.value)
+    closeSearch()
+}
+
+/** Open the matched post and locate the first hit in the editor search panel. */
+function openSearchResult(postId: string) {
+  const q = searchQuery.value.trim()
+  postStore.currentPostId = postId
+  closeSearch()
+  if (q) {
+    // The search panel lives in the editor pane; make sure it is visible.
+    if (uiStore.viewMode === `preview`)
+      uiStore.setViewMode(`split`)
+    uiStore.openSearchTab(q)
+  }
 }
 
 // Debounced so each keystroke does not synchronously scan every post body.
@@ -760,6 +783,20 @@ function handleDragEnd() {
             class="inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
             :class="[
               isMobile ? 'size-8' : 'size-7',
+              { 'text-primary bg-primary/10': showExportRecords },
+            ]"
+            :aria-label="t('post.exportRecords')"
+            :title="t('post.exportRecords')"
+            @click="toggleExportRecords"
+          >
+            <Image class="size-4" />
+          </button>
+
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+            :class="[
+              isMobile ? 'size-8' : 'size-7',
               { 'text-primary bg-primary/10': isSelectMode },
             ]"
             :title="isSelectMode ? t('post.exitSelect') : t('post.multiSelect')"
@@ -937,7 +974,9 @@ function handleDragEnd() {
         </div>
       </div>
 
-      <div v-if="isSearching && searchQuery.trim()" class="flex-1 overflow-y-auto px-1.5 py-0.5 thin-scrollbar">
+      <ExportRecordsPanel v-if="showExportRecords" />
+
+      <div v-else-if="isSearching && searchQuery.trim()" class="flex-1 overflow-y-auto px-1.5 py-0.5 thin-scrollbar">
         <div v-if="totalMatches > 0" class="px-2 py-1 text-xs text-muted-foreground/60">
           {{ t('post.matchStats', { matches: totalMatches, posts: searchResults.length }) }}
         </div>
@@ -951,7 +990,7 @@ function handleDragEnd() {
               'bg-accent text-accent-foreground font-medium': postStore.currentPostId === result.id,
               'text-foreground/70 hover:text-foreground hover:bg-accent/50': postStore.currentPostId !== result.id,
             }"
-            @click="postStore.currentPostId = result.id; closeSearch()"
+            @click="openSearchResult(result.id)"
           >
             <span
               v-if="postStore.currentPostId === result.id"

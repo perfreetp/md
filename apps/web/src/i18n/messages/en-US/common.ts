@@ -106,6 +106,7 @@ export default {
     exportPdf: `PDF`,
     exportPng: `PNG`,
     exportPngSegments: `PNG (split)`,
+    exportLongImage: `Long image export (watermark / width)…`,
     exportPngSegmentHeight: `~{height}px per image`,
     templateManage: `Templates`,
     marketplace: `Community Themes`,

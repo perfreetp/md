@@ -237,6 +237,7 @@ export default {
     },
     previewDeviceOption: {
       desktop: `Desktop`,
+      tablet: `Tablet`,
       mobile: `Mobile`,
     },
     scrollSync: {
@@ -255,6 +256,44 @@ export default {
       label: `Word count`,
       hint: `Show word count and reading time at the top of the preview`,
     },
+  },
+  pngExport: {
+    title: `Long Image Export`,
+    description: `Export the current rendering as a long image with configurable width, segments and watermark.`,
+    device: {
+      label: `Export width`,
+      mobile: `Phone`,
+      tablet: `Tablet`,
+      desktop: `Desktop`,
+    },
+    mode: {
+      label: `Export mode`,
+      single: `Single image`,
+      segments: `Segments`,
+    },
+    segmentHeight: {
+      label: `Segment height`,
+    },
+    watermark: {
+      label: `Text watermark`,
+      hint: `Overlay a text watermark on the exported image`,
+    },
+    watermarkText: {
+      label: `Watermark text`,
+      placeholder: `Enter watermark text`,
+    },
+    watermarkPosition: {
+      label: `Watermark position`,
+      topLeft: `Top left`,
+      topRight: `Top right`,
+      center: `Center`,
+      bottomLeft: `Bottom left`,
+      bottomRight: `Bottom right`,
+    },
+    watermarkOpacity: {
+      label: `Watermark opacity ({value}%)`,
+    },
+    export: `Export long image`,
   },
   pdfExport: {
     title: `Export PDF`,
